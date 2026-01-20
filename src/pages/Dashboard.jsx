@@ -4,18 +4,18 @@ import {
     BarChart3, TrendingUp, TrendingDown, Calendar, 
     ArrowRight, ArrowLeft, Package, Truck, 
     Wheat, Image as ImageIcon, AlertCircle, MousePointerClick,
-    MapPin, Filter,Download
+    MapPin, Filter, Download, Sparkles // <--- IMPORTANTE: Sparkles para Aseo
 } from 'lucide-react';
 import { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 export default function Dashboard() {
-    // null = Vista Global (Tabla Productos), ID = Vista Detalle (Tabla Semanas)
     const [periodoSeleccionado, setPeriodoSeleccionado] = useState(null); 
     const [periodoNombre, setPeriodoNombre] = useState(''); 
     
     const [datosGlobales, setDatosGlobales] = useState({ headers: [], data: [] });
     const [loading, setLoading] = useState(false);
-    const [downloading, setDownloading] = useState(false);
+    const [downloading, setDownloading] = useState(false); // Estado para el botón
 
     useEffect(() => {
         if (!periodoSeleccionado) cargarGlobal();
@@ -38,15 +38,14 @@ export default function Dashboard() {
         setPeriodoNombre(nombre);
     };
 
-    // --- 2. FUNCIÓN DE DESCARGA ---
+    // --- FUNCIÓN DE DESCARGA EXCEL ---
     const handleDescargarExcel = async () => {
         setDownloading(true);
         try {
             const response = await api.get('/reportes/exportar-excel', {
-                responseType: 'blob', // Importante: indica que esperamos un archivo
+                responseType: 'blob',
             });
 
-            // Crear una URL temporal para el archivo y forzar la descarga
             const url = window.URL.createObjectURL(new Blob([response.data]));
             const link = document.createElement('a');
             link.href = url;
@@ -85,7 +84,7 @@ export default function Dashboard() {
                 </div>
 
                 <div className="flex gap-3">
-                    {/* 3. BOTÓN DE DESCARGA (Solo visible en la vista global) */}
+                    {/* BOTÓN DE DESCARGA (Solo en Global) */}
                     {!periodoSeleccionado && (
                         <button 
                             onClick={handleDescargarExcel}
@@ -120,7 +119,6 @@ export default function Dashboard() {
                 </div>
             ) : (
                 <>
-                    {/* VISTA 1: TABLA GLOBAL DE PRODUCTOS */}
                     {!periodoSeleccionado && (
                         <TablaGlobalProductos 
                             header={datosGlobales.headers} 
@@ -129,7 +127,6 @@ export default function Dashboard() {
                         />
                     )}
 
-                    {/* VISTA 2: DETALLE DEL PERIODO */}
                     {periodoSeleccionado && (
                         <DetallePeriodo periodoId={periodoSeleccionado} />
                     )}
@@ -139,7 +136,9 @@ export default function Dashboard() {
     );
 }
 
-// VISTA 1: TABLA GLOBAL
+// ===============================================
+// VISTA 1: TABLA GLOBAL (Con soporte para Aseo)
+// ===============================================
 function TablaGlobalProductos({ header, data, onPeriodoClick }) {
     if (!data || data.length === 0) return <EmptyState mensaje="No hay datos registrados." />;
 
@@ -159,10 +158,7 @@ function TablaGlobalProductos({ header, data, onPeriodoClick }) {
                                 <th className="px-6 py-5 min-w-[180px] bg-slate-100 text-slate-700 text-center border-r border-slate-200">Total Histórico</th>
                                 {header.map(h => (
                                     <th key={h.id} onClick={() => onPeriodoClick(h.id, h.nombre)} className="px-4 py-5 text-center min-w-[140px] border-r border-slate-100 last:border-0 whitespace-nowrap cursor-pointer hover:bg-blue-50 hover:text-blue-600 transition-colors group">
-                                        <div className="flex items-center justify-center gap-1">
-                                            {h.nombre}
-                                            <ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" />
-                                        </div>
+                                        <div className="flex items-center justify-center gap-1">{h.nombre}<ArrowRight size={12} className="opacity-0 group-hover:opacity-100 transition-opacity" /></div>
                                     </th>
                                 ))}
                             </tr>
@@ -172,8 +168,15 @@ function TablaGlobalProductos({ header, data, onPeriodoClick }) {
                                 <tr key={row.producto_id} className="group hover:bg-slate-50/80 transition-colors">
                                     <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-20 border-r border-slate-200 shadow-sm">
                                         <div className="flex items-center gap-3">
-                                            <div className={`p-2 rounded-lg shadow-sm ${row.categoria === 'grano' ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'}`}>
-                                                {row.categoria === 'grano' ? <Wheat size={16} /> : <ImageIcon size={16} />}
+                                            {/* LOGICA DE ICONOS Y COLORES (ASEO INCLUIDO) */}
+                                            <div className={`p-2 rounded-lg shadow-sm ${
+                                                row.categoria === 'grano' ? 'bg-amber-100 text-amber-600' : 
+                                                row.categoria === 'aseo' ? 'bg-cyan-100 text-cyan-600' : 
+                                                'bg-purple-100 text-purple-600'
+                                            }`}>
+                                                {row.categoria === 'grano' ? <Wheat size={16} /> : 
+                                                 row.categoria === 'aseo' ? <Sparkles size={16} /> : 
+                                                 <ImageIcon size={16} />}
                                             </div>
                                             <div>
                                                 <p className="font-bold text-slate-700 text-sm">{row.nombre}</p>
@@ -217,7 +220,9 @@ function TablaGlobalProductos({ header, data, onPeriodoClick }) {
     );
 }
 
-// VISTA 2: DETALLE DEL PERIODO
+// ===============================================
+// VISTA 2: DETALLE DEL PERIODO (Con soporte para Aseo)
+// ===============================================
 function DetallePeriodo({ periodoId }) {
     const [dataMatrix, setDataMatrix] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -260,11 +265,20 @@ function DetallePeriodo({ periodoId }) {
                         <tbody className="divide-y divide-slate-100">
                             {dataMatrix.data.map((row) => {
                                 const esGrano = row.categoria === 'grano';
+                                const esAseo = row.categoria === 'aseo';
                                 return (
                                     <tr key={row.producto_id} className="group hover:bg-slate-50/80 transition-colors">
                                         <td className="px-6 py-4 sticky left-0 bg-white group-hover:bg-slate-50 transition-colors z-20 border-r border-slate-200 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.05)]">
                                             <div className="flex items-center gap-3">
-                                                <div className={`p-2.5 rounded-xl shadow-sm ${esGrano ? 'bg-amber-100 text-amber-600' : 'bg-purple-100 text-purple-600'}`}>{esGrano ? <Wheat size={18} /> : <ImageIcon size={18} />}</div>
+                                                <div className={`p-2.5 rounded-xl shadow-sm ${
+                                                    esGrano ? 'bg-amber-100 text-amber-600' : 
+                                                    esAseo ? 'bg-cyan-100 text-cyan-600' : 
+                                                    'bg-purple-100 text-purple-600'
+                                                }`}>
+                                                    {esGrano ? <Wheat size={18} /> : 
+                                                     esAseo ? <Sparkles size={18} /> : 
+                                                     <ImageIcon size={18} />}
+                                                </div>
                                                 <div><p className="font-bold text-slate-700 text-sm">{row.nombre}</p><p className="text-[10px] uppercase font-bold text-slate-400 tracking-wide">{row.categoria}</p></div>
                                             </div>
                                         </td>
@@ -300,15 +314,14 @@ function DetallePeriodo({ periodoId }) {
                 </div>
             </div>
 
-            {/* SECCIÓN DE RUTAS (CON FILTRO DE SEMANA) */}
+            {/* SECCIÓN DE RUTAS */}
             <ResumenRutas productos={dataMatrix.data} />
         </div>
     );
 }
 
-// NUEVA LÓGICA: TARJETAS DE RUTAS CON FILTRO
+// LOGICA DE RUTAS
 function ResumenRutas({ productos }) {
-    // 1. Transformamos los datos: Ruta -> Semana -> ListaProductos
     const rutasProcesadas = useMemo(() => {
         const rutasMap = {};
         productos.forEach(prod => {
@@ -346,7 +359,6 @@ function ResumenRutas({ productos }) {
 
             <div className="p-6 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {nombresRutas.map(ruta => (
-                    // Aquí llamamos al componente inteligente que maneja su propio estado
                     <TarjetaRuta key={ruta} nombreRuta={ruta} datosSemanas={rutasProcesadas[ruta]} />
                 ))}
             </div>
@@ -354,27 +366,19 @@ function ResumenRutas({ productos }) {
     );
 }
 
-// COMPONENTE TARJETA INDIVIDUAL
+// COMPONENTE TARJETA INDIVIDUAL (Con soporte de color para Aseo)
 function TarjetaRuta({ nombreRuta, datosSemanas }) {
-    // Obtenemos las semanas disponibles para esta ruta (ej: ["1", "3"])
     const semanasDisponibles = Object.keys(datosSemanas).sort((a, b) => a - b);
-    
-    // Estado local: Qué semana está viendo el usuario en ESTA tarjeta
     const [semanaActiva, setSemanaActiva] = useState(semanasDisponibles[0]);
-
-    // Productos de la semana seleccionada
     const productosMostrar = datosSemanas[semanaActiva] || [];
 
     return (
         <div className="border border-slate-200 rounded-2xl overflow-hidden hover:shadow-md transition-shadow bg-white flex flex-col h-full">
-            {/* Header de la Tarjeta */}
             <div className="bg-slate-50/50 px-5 py-4 border-b border-slate-100 flex flex-col gap-3">
                 <h4 className="font-bold text-slate-700 flex items-center gap-2 text-sm">
                     <MapPin size={16} className="text-orange-500" /> 
                     <span className="truncate" title={nombreRuta}>{nombreRuta}</span>
                 </h4>
-                
-                {/* SELECTOR DE SEMANA */}
                 <div className="relative">
                     <Filter size={14} className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
                     <select 
@@ -389,13 +393,16 @@ function TarjetaRuta({ nombreRuta, datosSemanas }) {
                 </div>
             </div>
 
-            {/* Lista de Productos */}
             <div className="p-4 flex-1">
                 <div className="space-y-3">
                     {productosMostrar.map((item, idx) => (
                         <div key={idx} className="flex justify-between items-center text-sm border-b border-slate-50 pb-2 last:border-0 last:pb-0">
                             <div className="flex items-center gap-2">
-                                <div className={`w-2 h-2 rounded-full shadow-sm ${item.categoria === 'grano' ? 'bg-amber-400' : 'bg-purple-400'}`}></div>
+                                <div className={`w-2 h-2 rounded-full shadow-sm ${
+                                    item.categoria === 'grano' ? 'bg-amber-400' : 
+                                    item.categoria === 'aseo' ? 'bg-cyan-400' : 
+                                    'bg-purple-400'
+                                }`}></div>
                                 <span className="text-slate-600 font-medium">{item.producto}</span>
                             </div>
                             <span className="font-bold text-red-600 bg-red-50 px-2 py-1 rounded-md text-xs border border-red-100">
@@ -406,7 +413,6 @@ function TarjetaRuta({ nombreRuta, datosSemanas }) {
                 </div>
             </div>
             
-            {/* Footer con total resumen */}
             <div className="bg-slate-50 px-4 py-2 border-t border-slate-100 text-[10px] text-slate-400 text-center">
                 Total ítems: {productosMostrar.length}
             </div>
