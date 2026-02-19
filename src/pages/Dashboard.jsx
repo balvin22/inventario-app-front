@@ -1,26 +1,28 @@
 import { useState } from 'react';
-import { Calendar, ArrowLeft, Download, Loader2, Search, Filter, X, Clock } from 'lucide-react'; // <--- Iconos nuevos
+import { Calendar, ArrowLeft, Download, Loader2, Search, Filter, X, Clock, FileText } from 'lucide-react'; // <--- Importamos FileText
 import { Toaster } from 'react-hot-toast';
 
 // Componentes UI
 import TablaGlobal from '../components/dashboard/TablaGlobal';
 import DetallePeriodo from '../components/dashboard/DetallePeriodo';
+import ActaDashboardModal from '../components/dashboard/ActaDashboardModal'; // <--- IMPORTAMOS EL NUEVO MODAL
 
 // Custom Hooks
 import { useInventarioGlobal } from '../hooks/useInventarioGlobal';
 
 export default function Dashboard() {
     const [vistaDetalle, setVistaDetalle] = useState({ id: null, nombre: '' });
+    const [showActaModal, setShowActaModal] = useState(false); // <--- ESTADO PARA EL MODAL
 
-    // Extraemos las nuevas props del Hook
+    // Extraemos las props del Hook
     const { 
-        datosGlobales, periodosOptions, // <--- Lista de periodos
+        datosGlobales, periodosOptions,
         loading, 
         page, setPage, totalPages, totalRecords,
-        searchTerm, setSearchTerm, // <--- Buscador
-        filterCategory, setFilterCategory, // <--- Filtro Categoría
-        filterPeriodo, setFilterPeriodo, // <--- Filtro Periodo
-        limpiarFiltros, // <--- Reset
+        searchTerm, setSearchTerm, 
+        filterCategory, setFilterCategory, 
+        filterPeriodo, setFilterPeriodo, 
+        limpiarFiltros, 
         downloading, descargarExcel 
     } = useInventarioGlobal();
 
@@ -53,14 +55,27 @@ export default function Dashboard() {
 
                 <div className="flex gap-3">
                     {esVistaGlobal && (
-                        <button 
-                            onClick={descargarExcel}
-                            disabled={downloading}
-                            className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors font-medium shadow-sm shadow-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
-                        >
-                            {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
-                            {downloading ? 'Generando...' : 'Exportar Todo'}
-                        </button>
+                        <>
+                            {/* --- BOTÓN NUEVO: DESCARGAR ACTA (PDF) --- */}
+                            <button 
+                                onClick={() => setShowActaModal(true)}
+                                disabled={loading || !datosGlobales.data?.length}
+                                className="flex items-center gap-2 bg-slate-800 text-white px-4 py-2 rounded-xl hover:bg-slate-900 transition-colors font-medium shadow-sm shadow-slate-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <FileText size={18} />
+                                <span>Acta PDF</span>
+                            </button>
+
+                            {/* --- BOTÓN EXISTENTE: EXCEL --- */}
+                            <button 
+                                onClick={descargarExcel}
+                                disabled={downloading}
+                                className="flex items-center gap-2 bg-emerald-600 text-white px-4 py-2 rounded-xl hover:bg-emerald-700 transition-colors font-medium shadow-sm shadow-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                {downloading ? <Loader2 size={18} className="animate-spin" /> : <Download size={18} />}
+                                <span className="hidden sm:inline">{downloading ? 'Generando...' : 'Exportar Excel'}</span>
+                            </button>
+                        </>
                     )}
 
                     {!esVistaGlobal && (
@@ -74,12 +89,12 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* --- NUEVA BARRA DE BÚSQUEDA Y FILTROS (Solo visible en Vista Global) --- */}
+            {/* --- BARRA DE BÚSQUEDA Y FILTROS (Igual que antes) --- */}
             {esVistaGlobal && (
                 <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm grid grid-cols-1 md:grid-cols-12 gap-4 items-center">
-                    
-                    {/* Buscador */}
-                    <div className="md:col-span-5 relative">
+                     {/* ... (Tu código de filtros aquí sigue igual) ... */}
+                     
+                     <div className="md:col-span-5 relative">
                         <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" size={18} />
                         <input 
                             type="text" 
@@ -90,7 +105,6 @@ export default function Dashboard() {
                         />
                     </div>
 
-                    {/* Filtro Categoría */}
                     <div className="md:col-span-3 relative">
                         <Filter className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                         <select 
@@ -105,7 +119,6 @@ export default function Dashboard() {
                         </select>
                     </div>
 
-                    {/* Filtro Periodo */}
                     <div className="md:col-span-3 relative">
                         <Clock className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 pointer-events-none" size={16} />
                         <select 
@@ -120,14 +133,9 @@ export default function Dashboard() {
                         </select>
                     </div>
 
-                    {/* Botón Limpiar */}
                     <div className="md:col-span-1 flex justify-end">
                         {hayFiltrosActivos && (
-                            <button 
-                                onClick={limpiarFiltros}
-                                className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors"
-                                title="Limpiar filtros"
-                            >
+                            <button onClick={limpiarFiltros} className="p-2.5 text-slate-400 hover:text-red-500 hover:bg-red-50 rounded-xl transition-colors">
                                 <X size={20} />
                             </button>
                         )}
@@ -158,6 +166,19 @@ export default function Dashboard() {
                     )}
                 </>
             )}
+
+            {/* --- RENDERIZAMOS EL MODAL AQUÍ AL FINAL --- */}
+            <ActaDashboardModal 
+                isOpen={showActaModal}
+                onClose={() => setShowActaModal(false)}
+                // CAMBIO: Ya no pasamos 'dataGlobal', pasamos los filtros y totalRecords
+                filters={{
+                    search: searchTerm,
+                    category: filterCategory,
+                    period: filterPeriodo
+                }}
+                totalRecords={totalRecords} // Para mostrar cuántos se van a imprimir
+            />
         </div>
     );
 }
