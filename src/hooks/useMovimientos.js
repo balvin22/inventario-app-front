@@ -71,8 +71,13 @@ export function useMovimientos() {
                 tipo: filterType !== 'todos' ? filterType : undefined,
                 periodo_id: selectedPeriodo !== 'todos' ? selectedPeriodo : undefined,
                 semana_id: selectedSemana !== 'todos' ? selectedSemana : undefined,
-                ruta_nombre: selectedRuta !== 'todos' ? selectedRuta : undefined
             };
+
+            if (selectedRuta === '__tercero__') {
+                params.destino_tipo = 'tercero';
+            } else if (selectedRuta !== 'todos') {
+                params.ruta_nombre = selectedRuta;
+            }
 
             const response = await api.get('/movimientos/', { params });
             setMovimientos(response.data.data);

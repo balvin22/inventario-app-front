@@ -122,7 +122,11 @@ export default function DetallePeriodo({ periodoId }) {
             </div>
 
             {/* SECCIÓN DE RUTAS */}
-            <ResumenRutas productos={dataMatrix.data} />
+            <ResumenRutas 
+                productos={dataMatrix.data} 
+                rutasCompletas={dataMatrix.rutas_completas}
+                tercerosCompletos={dataMatrix.terceros_completos}
+            />
         </div>
     );
 }

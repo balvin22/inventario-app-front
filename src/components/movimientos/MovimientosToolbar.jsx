@@ -70,8 +70,9 @@ export default function MovimientosToolbar({
                         onChange={(e) => { setSelectedRuta(e.target.value); setPage(1); }}
                         className="w-full pl-9 pr-3 py-2 bg-white border border-slate-200 rounded-lg text-sm text-slate-600 focus:border-blue-300 outline-none cursor-pointer hover:bg-slate-50"
                     >
-                        <option value="todos">Todas las Rutas</option>
+                        <option value="todos">Todos los Destinos</option>
                         {rutas.map(r => <option key={r.id} value={r.nombre}>{r.nombre}</option>)}
+                        <option value="__tercero__">Terceros</option>
                     </select>
                 </div>
 

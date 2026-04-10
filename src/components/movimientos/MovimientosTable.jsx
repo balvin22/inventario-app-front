@@ -81,16 +81,18 @@ export default function MovimientosTable({
                                             </span>
                                         ) : (
                                             <div className="flex items-center gap-2">
-                                                {m.destino_tipo === 'ruta' ? (
+                                                {m.destino_tipo === 'ruta' && m.ruta_nombre ? (
                                                     <>
                                                         <div className="p-1.5 bg-orange-50 text-orange-600 rounded-md shrink-0 border border-orange-100"><Truck size={14}/></div>
                                                         <span className="font-medium truncate max-w-[200px]">{m.ruta_nombre}</span>
                                                     </>
-                                                ) : (
+                                                ) : m.destino_tipo === 'tercero' ? (
                                                     <>
                                                         <div className="p-1.5 bg-purple-50 text-purple-600 rounded-md shrink-0 border border-purple-100"><User size={14}/></div>
                                                         <span className="italic truncate max-w-[200px]">"{m.nota_terceros}"</span>
                                                     </>
+                                                ) : (
+                                                    <span className="text-slate-400 italic">Sin destino</span>
                                                 )}
                                             </div>
                                         )}
